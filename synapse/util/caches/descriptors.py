@@ -16,6 +16,7 @@ import functools
 import inspect
 import logging
 from typing import (
+    TYPE_CHECKING,
     Any,
     Awaitable,
     Callable,
@@ -44,6 +45,9 @@ from synapse.util import unwrapFirstError
 from synapse.util.async_helpers import delay_cancellation
 from synapse.util.caches.deferred_cache import DeferredCache
 from synapse.util.caches.lrucache import LruCache
+
+if TYPE_CHECKING:
+    from synapse.replication.tcp.external_sharded_cache import ExternalShardedCache
 
 logger = logging.getLogger(__name__)
 
