@@ -1370,6 +1370,7 @@ class SyncHandler:
                 debug_current_token,
             )
             now_token = debug_current_token
+            token_before_rooms = debug_current_token
 
         log_kv({"now_token": now_token})
 
