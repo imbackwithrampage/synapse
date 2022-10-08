@@ -85,6 +85,8 @@ jobs:
         run: ./scripts-dev/complement.sh
         env:
           COMPLEMENT_DIR: complement
+          WORKERS: 1
+          POSTGRES: 1
 
   # Builds
 
