@@ -530,6 +530,53 @@ class ReadReceiptsTestCase(unittest.HomeserverTestCase):
             # Test that we didn't get a read receipt.
             self.assertIsNone(self._get_read_receipt())
 
+    def test_read_marker_doesnt_send_receipt_to_large_rooms(self) -> None:
+        # Beeper: we don't send read receipts on rooms with over 100 users
+        # add another 100 users to the room
+        for i in range(RECEIPTS_MAX_ROOM_SIZE):
+            user = self.register_user(f"user_{i}", f"secure_password_{i}")
+            tok = self.login(f"user_{i}", f"secure_password_{i}")
+            self.helper.join(room=self.room_id, user=user, tok=tok)
+
+        res = self.helper.send(
+            self.room_id, body="woah, this is a big room!", tok=self.tok
+        )
+
+        # Send a read receipt
+        channel = self.make_request(
+            "POST",
+            f"/rooms/{self.room_id}/read_markers",
+            {
+                ReceiptTypes.FULLY_READ: res["event_id"],
+                ReceiptTypes.READ: res["event_id"],
+            },
+            access_token=self.tok2,
+        )
+
+        self.assertEqual(channel.code, 200, channel.json_body)
+        # Test that we didn't get a read receipt.
+        self.assertIsNone(self._get_read_receipt())
+
+    def test_read_marker_does_send_receipt_to_small_rooms(self) -> None:
+        res = self.helper.send(
+            self.room_id, body="woah, this is room is tiny!", tok=self.tok
+        )
+
+        # Send a read receipt
+        channel = self.make_request(
+            "POST",
+            f"/rooms/{self.room_id}/read_markers",
+            {
+                ReceiptTypes.FULLY_READ: res["event_id"],
+                ReceiptTypes.READ: res["event_id"],
+            },
+            access_token=self.tok2,
+        )
+
+        self.assertEqual(channel.code, 200, channel.json_body)
+        # Test that we didn't get a read receipt.
+        self.assertIsNotNone(self._get_read_receipt())
+
     def _get_read_receipt(self) -> Optional[JsonDict]:
         """Syncs and returns the read receipt."""
 
