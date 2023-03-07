@@ -118,11 +118,19 @@ class ReceiptsHandler:
 
         # Beeper: we don't want to send read receipts to large rooms,
         # so we convert messages to private, that are over RECEIPT_MAX_ROOM_SIZE.
+        room_ids_to_check = {
+            r.room_id for r in receipts if r.receipt_type != ReceiptTypes.READ_PRIVATE
+        }
+
+        large_rooms = []
+        for room_id in room_ids_to_check:
+            num_users = await self.store.get_number_joined_users_in_room(room_id)
+            if num_users > RECEIPTS_MAX_ROOM_SIZE:
+                large_rooms.append(room_id)
+
         for i, r in enumerate(receipts):
-            if r.receipt_type != ReceiptTypes.READ_PRIVATE:
-                num_users = await self.store.get_number_joined_users_in_room(r.room_id)
-                if num_users > RECEIPTS_MAX_ROOM_SIZE:
-                    receipts[i] = r.make_private_copy()
+            if r.room_id in large_rooms:
+                receipts[i] = r.make_private_copy()
 
         for receipt in receipts:
             res = await self.store.insert_receipt(
