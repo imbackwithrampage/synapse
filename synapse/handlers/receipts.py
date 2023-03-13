@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING, Iterable, List, Optional, Tuple
 
 from synapse.api.constants import RECEIPTS_MAX_ROOM_SIZE, EduTypes, ReceiptTypes
 from synapse.appservice import ApplicationService
+from synapse.util.async_helpers import yieldable_gather_results
 from synapse.streams import EventSource
 from synapse.types import (
     JsonDict,
@@ -122,10 +123,13 @@ class ReceiptsHandler:
             r.room_id for r in receipts if r.receipt_type != ReceiptTypes.READ_PRIVATE
         }
 
+        room_sizes = await yieldable_gather_results(
+            lambda room_id: self.store.get_number_joined_users_in_room(room_id),
+            (room_id for room_id in room_ids_to_check)
+        )
         large_rooms = []
-        for room_id in room_ids_to_check:
-            num_users = await self.store.get_number_joined_users_in_room(room_id)
-            if num_users > RECEIPTS_MAX_ROOM_SIZE:
+        for room_id, room_size in zip(room_ids_to_check, room_sizes):
+            if room_size > RECEIPTS_MAX_ROOM_SIZE:
                 large_rooms.append(room_id)
 
         for i, r in enumerate(receipts):
