@@ -16,7 +16,6 @@ from typing import TYPE_CHECKING, Iterable, List, Optional, Tuple
 
 from synapse.api.constants import RECEIPTS_MAX_ROOM_SIZE, EduTypes, ReceiptTypes
 from synapse.appservice import ApplicationService
-from synapse.util.async_helpers import yieldable_gather_results
 from synapse.streams import EventSource
 from synapse.types import (
     JsonDict,
@@ -25,6 +24,7 @@ from synapse.types import (
     UserID,
     get_domain_from_id,
 )
+from synapse.util.async_helpers import yieldable_gather_results
 
 if TYPE_CHECKING:
     from synapse.server import HomeServer
