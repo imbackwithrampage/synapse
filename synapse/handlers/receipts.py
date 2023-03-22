@@ -125,7 +125,7 @@ class ReceiptsHandler:
 
         room_sizes = await yieldable_gather_results(
             lambda room_id: self.store.get_number_joined_users_in_room(room_id),
-            (room_id for room_id in room_ids_to_check)
+            (room_id for room_id in room_ids_to_check),
         )
         large_rooms = []
         for room_id, room_size in zip(room_ids_to_check, room_sizes):
