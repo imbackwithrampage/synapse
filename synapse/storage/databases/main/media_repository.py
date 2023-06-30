@@ -418,7 +418,6 @@ class MediaRepositoryStore(MediaRepositoryBackgroundUpdateStore):
                 "SELECT COUNT(*), MIN(unused_expires_at)"
                 " FROM local_media_repository"
                 " WHERE user_id = ?"
-                " AND quarantined_by IS NULL"
                 " AND unused_expires_at > ?"
                 " AND media_length IS NULL"
             )
