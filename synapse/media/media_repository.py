@@ -360,6 +360,10 @@ class MediaRepository:
                 respond_404(request)
                 return None
 
+            if media_info.get("unused_expires_at", 0) < self.clock.time_msec():
+                respond_404(request)
+                return None
+
             # The file has been uploaded, so stop looping
             if media_info.get("media_length") is not None:
                 return media_info
