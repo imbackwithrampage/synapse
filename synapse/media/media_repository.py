@@ -242,7 +242,7 @@ class MediaRepository:
             raise SynapseError(
                 409,
                 "Media ID already has content",
-                errcode="M_CANNOT_OVERWRITE_MEDIA",
+                errcode=Codes.CANNOT_OVERWRITE_MEDIA,
             )
 
         if media.get("unused_expires_at", 0) < self.clock.time_msec():

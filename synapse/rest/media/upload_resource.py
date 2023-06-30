@@ -132,7 +132,7 @@ class UploadResource(DirectServeJsonResource):
             raise SynapseError(
                 409,
                 "Media ID cannot be overwritten",
-                errcode="M_CANNOT_OVERWRITE_MEDIA",
+                errcode=Codes.CANNOT_OVERWRITE_MEDIA,
             )
 
         async with lock:
