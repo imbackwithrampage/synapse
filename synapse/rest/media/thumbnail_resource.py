@@ -227,6 +227,7 @@ class ThumbnailResource(DirectServeJsonResource):
             server_name, media_id, max_timeout_ms
         )
         if not media_info:
+            respond_404(request)
             return
 
         thumbnail_infos = await self.store.get_remote_media_thumbnails(
