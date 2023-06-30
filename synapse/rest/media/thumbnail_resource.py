@@ -157,8 +157,6 @@ class ThumbnailResource(DirectServeJsonResource):
         media_info = await self.media_repo.get_local_media_info(
             request, media_id, max_timeout_ms
         )
-        if not media_info:
-            return
 
         if not media_info:
             respond_404(request)
