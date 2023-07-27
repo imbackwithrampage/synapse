@@ -181,7 +181,7 @@ class SyncRestServlet(RestServlet):
         else:
             try:
                 filter_collection = await self.filtering.get_user_filter(
-                    user.localpart, filter_id
+                    user, filter_id
                 )
             except StoreError as err:
                 if err.code != 404:

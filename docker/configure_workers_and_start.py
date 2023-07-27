@@ -40,6 +40,8 @@
 #         log level. INFO is the default.
 #   * SYNAPSE_LOG_SENSITIVE: If unset, SQL and SQL values won't be logged,
 #         regardless of the SYNAPSE_LOG_LEVEL setting.
+#   * SYNAPSE_LOG_TESTING: if set, Synapse will log additional information useful
+#     for testing.
 #
 # NOTE: According to Complement's ENTRYPOINT expectations for a homeserver image (as defined
 # in the project's README), this script may be run multiple times, and functionality should
@@ -242,7 +244,6 @@ WORKERS_CONFIG: Dict[str, Dict[str, Any]] = {
             "^/_matrix/client/(api/v1|r0|v3|unstable)/join/",
             "^/_matrix/client/(api/v1|r0|v3|unstable)/knock/",
             "^/_matrix/client/(api/v1|r0|v3|unstable)/profile/",
-            "^/_matrix/client/(v1|unstable/org.matrix.msc2716)/rooms/.*/batch_send",
         ],
         "shared_extra_conf": {},
         "worker_extra_conf": "",
@@ -947,6 +948,7 @@ def generate_worker_log_config(
     extra_log_template_args["SYNAPSE_LOG_SENSITIVE"] = environ.get(
         "SYNAPSE_LOG_SENSITIVE"
     )
+    extra_log_template_args["SYNAPSE_LOG_TESTING"] = environ.get("SYNAPSE_LOG_TESTING")
 
     # Render and write the file
     log_config_filepath = f"/conf/workers/{worker_name}.log.config"

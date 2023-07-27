@@ -246,10 +246,6 @@ else
   else
     export PASS_SYNAPSE_COMPLEMENT_DATABASE=sqlite
   fi
-
-  # The tests for importing historical messages (MSC2716)
-  # only pass with monoliths, currently.
-  test_tags="$test_tags,msc2716"
 fi
 
 if [[ -n "$ASYNCIO_REACTOR" ]]; then
@@ -268,6 +264,10 @@ if [[ -n "$SYNAPSE_TEST_LOG_LEVEL" ]]; then
   # personal information
   export PASS_SYNAPSE_LOG_SENSITIVE=1
 fi
+
+# Log a few more useful things for a developer attempting to debug something
+# particularly tricky.
+export PASS_SYNAPSE_LOG_TESTING=1
 
 # Run the tests!
 echo "Images built; running complement"
