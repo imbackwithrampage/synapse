@@ -1196,6 +1196,32 @@ Example configuration:
 allow_device_name_lookup_over_federation: true
 ```
 ---
+### `federation`
+
+The federation section defines some sub-options related to federation.
+
+The following options are related to configuring timeout and retry logic for one request,
+independently of the others.
+Short retry algorithm is used when something or someone will wait for the request to have an
+answer, while long retry is used for requests that happen in the background,
+like sending a federation transaction.
+
+* `client_timeout`: timeout for the federation requests. Default to 60s.
+* `max_short_retry_delay`: maximum delay to be used for the short retry algo. Default to 2s.
+* `max_long_retry_delay`: maximum delay to be used for the short retry algo. Default to 60s.
+* `max_short_retries`: maximum number of retries for the short retry algo. Default to 3 attempts.
+* `max_long_retries`: maximum number of retries for the long retry algo. Default to 10 attempts.
+
+Example configuration:
+```yaml
+federation:
+  client_timeout: 180s
+  max_short_retry_delay: 7s
+  max_long_retry_delay: 100s
+  max_short_retries: 5
+  max_long_retries: 20
+```
+---
 ## Caching
 
 Options related to caching.
@@ -2570,7 +2596,50 @@ Example configuration:
 ```yaml
 nonrefreshable_access_token_lifetime: 24h
 ```
+---
+### `ui_auth`
 
+The amount of time to allow a user-interactive authentication session to be active.
+
+This defaults to 0, meaning the user is queried for their credentials
+before every action, but this can be overridden to allow a single
+validation to be re-used.  This weakens the protections afforded by
+the user-interactive authentication process, by allowing for multiple
+(and potentially different) operations to use the same validation session.
+
+This is ignored for potentially "dangerous" operations (including
+deactivating an account, modifying an account password, adding a 3PID,
+and minting additional login tokens).
+
+Use the `session_timeout` sub-option here to change the time allowed for credential validation.
+
+Example configuration:
+```yaml
+ui_auth:
+    session_timeout: "15s"
+```
+---
+### `login_via_existing_session`
+
+Matrix supports the ability of an existing session to mint a login token for
+another client.
+
+Synapse disables this by default as it has security ramifications -- a malicious
+client could use the mechanism to spawn more than one session.
+
+The duration of time the generated token is valid for can be configured with the
+`token_timeout` sub-option.
+
+User-interactive authentication is required when this is enabled unless the
+`require_ui_auth` sub-option is set to `False`.
+
+Example configuration:
+```yaml
+login_via_existing_session:
+    enabled: true
+    require_ui_auth: false
+    token_timeout: "5m"
+```
 ---
 ## Metrics
 Config options related to metrics.
@@ -3415,28 +3484,6 @@ password_config:
       require_uppercase: true
 ```
 ---
-### `ui_auth`
-
-The amount of time to allow a user-interactive authentication session to be active.
-
-This defaults to 0, meaning the user is queried for their credentials
-before every action, but this can be overridden to allow a single
-validation to be re-used.  This weakens the protections afforded by
-the user-interactive authentication process, by allowing for multiple
-(and potentially different) operations to use the same validation session.
-
-This is ignored for potentially "dangerous" operations (including
-deactivating an account, modifying an account password, and
-adding a 3PID).
-
-Use the `session_timeout` sub-option here to change the time allowed for credential validation.
-
-Example configuration:
-```yaml
-ui_auth:
-    session_timeout: "15s"
-```
----
 ## Push
 Configuration settings related to push notifications
 
@@ -4041,51 +4088,6 @@ giving each worker a unique `worker_name`.
 Example configuration:
 ```yaml
 worker_name: generic_worker1
-```
----
-### `worker_replication_host`
-*Deprecated as of version 1.84.0. Place `host` under `main` entry on the [`instance_map`](#instance_map) in your shared yaml configuration instead.*
-
-The HTTP replication endpoint that it should talk to on the main Synapse process.
-The main Synapse process defines this with a `replication` resource in
-[`listeners` option](#listeners).
-
-Example configuration:
-```yaml
-worker_replication_host: 127.0.0.1
-```
----
-### `worker_replication_http_port`
-*Deprecated as of version 1.84.0. Place `port` under `main` entry on the [`instance_map`](#instance_map) in your shared yaml configuration instead.*
-
-The HTTP replication port that it should talk to on the main Synapse process.
-The main Synapse process defines this with a `replication` resource in
-[`listeners` option](#listeners).
-
-Example configuration:
-```yaml
-worker_replication_http_port: 9093
-```
----
-### `worker_replication_http_tls`
-*Deprecated as of version 1.84.0. Place `tls` under `main` entry on the [`instance_map`](#instance_map) in your shared yaml configuration instead.*
-
-Whether TLS should be used for talking to the HTTP replication port on the main
-Synapse process.
-The main Synapse process defines this with the `tls` option on its [listener](#listeners) that
-has the `replication` resource enabled.
-
-**Please note:** by default, it is not safe to expose replication ports to the
-public Internet, even with TLS enabled.
-See [`worker_replication_secret`](#worker_replication_secret).
-
-Defaults to `false`.
-
-*Added in Synapse 1.72.0.*
-
-Example configuration:
-```yaml
-worker_replication_http_tls: true
 ```
 ---
 ### `worker_listeners`
