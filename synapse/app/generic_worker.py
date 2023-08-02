@@ -56,6 +56,7 @@ from synapse.storage.databases.main.appservice import (
     ApplicationServiceTransactionWorkerStore,
     ApplicationServiceWorkerStore,
 )
+from synapse.storage.databases.main.beeper import BeeperStore
 from synapse.storage.databases.main.censor_events import CensorEventsStore
 from synapse.storage.databases.main.client_ips import ClientIpWorkerStore
 from synapse.storage.databases.main.deviceinbox import DeviceInboxWorkerStore
@@ -144,6 +145,7 @@ class GenericWorkerStore(
     TransactionWorkerStore,
     LockStore,
     SessionStore,
+    BeeperStore,
 ):
     # Properties that multiple storage classes define. Tell mypy what the
     # expected type is.
