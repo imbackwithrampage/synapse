@@ -126,6 +126,8 @@ class HttpPusher(Pusher):
             pusher_config.app_id,
             pusher_config.pushkey,
         )
+        # Beeper: Save this so we can pass this on to Sygnal as well
+        self.user_name = pusher_config.user_name
 
         # Validate that there's a URL and it is of the proper form.
         if "url" not in self.data:
@@ -404,6 +406,7 @@ class HttpPusher(Pusher):
             "pushkey": self.pushkey,
             "pushkey_ts": int(self.pushkey_ts / 1000),
             "data": data,
+            "user_id": self.user_id,
         }
         if tweaks:
             device["tweaks"] = tweaks
@@ -524,6 +527,7 @@ class HttpPusher(Pusher):
                         "pushkey": self.pushkey,
                         "pushkey_ts": int(self.pushkey_ts / 1000),
                         "data": self.data_minus_url,
+                        "user_id": self.user_id,
                     }
                 ],
             }
