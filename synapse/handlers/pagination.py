@@ -13,9 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import logging
+import time
 from typing import TYPE_CHECKING, Dict, List, Optional, Set
 
 import attr
+from prometheus_client import Histogram
 
 from twisted.python.failure import Failure
 
@@ -44,6 +46,8 @@ logger = logging.getLogger(__name__)
 # backfill and try to fill in the history. This is an arbitrarily picked number so feel
 # free to tune it in the future.
 BACKFILL_BECAUSE_TOO_MANY_GAPS_THRESHOLD = 3
+
+purge_time = Histogram("room_purge_time", "Time taken to purge rooms (sec)")
 
 
 @attr.s(slots=True, auto_attribs=True)
@@ -412,6 +416,8 @@ class PaginationHandler:
             room_id: room to be purged
             force: set true to skip checking for joined users.
         """
+        logger.info(f"[purge room] purging {room_id}, force={force}")
+        purge_start = time.time()
         async with self.pagination_lock.write(room_id):
             # first check that we have no users in this room
             if not force:
@@ -420,6 +426,11 @@ class PaginationHandler:
                     raise SynapseError(400, "Users are still joined to this room")
 
             await self._storage_controllers.purge_events.purge_room(room_id)
+        purge_end = time.time()
+        logger.info(
+            f"[purge room] purging {room_id} took {purge_end - purge_start} seconds"
+        )
+        purge_time.observe(purge_end - purge_start)
 
     @trace
     async def get_messages(
