@@ -212,6 +212,7 @@ class ContextRequest:
     url: str
     protocol: str
     user_agent: str
+    beeper_bridge: str
 
 
 LoggingContextOrSentinel = Union["LoggingContext", "_Sentinel"]
@@ -608,6 +609,7 @@ class LoggingContextFilter(logging.Filter):
             record.url = request.url
             record.protocol = request.protocol
             record.user_agent = request.user_agent
+            record.beeper_bridge = request.beeper_bridge
 
         return True
 
