@@ -132,13 +132,14 @@ class SyncRestServlet(RestServlet):
 
         logger.debug(
             "/sync: user=%r, timeout=%r, since=%r, "
-            "set_presence=%r, filter_id=%r, device_id=%r",
+            "set_presence=%r, filter_id=%r, device_id=%r, beeper_previews=%r",
             user,
             timeout,
             since,
             set_presence,
             filter_id,
             device_id,
+            beeper_previews,
         )
 
         # Stream position of the last ignored users account data event for this user,
@@ -162,6 +163,7 @@ class SyncRestServlet(RestServlet):
             full_state,
             device_id,
             last_ignore_accdata_streampos,
+            beeper_previews,
         )
 
         if filter_id is None:
