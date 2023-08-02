@@ -154,6 +154,8 @@ RUN --mount=type=cache,target=/synapse/target,sharing=locked \
   pip install --prefix="/install" --no-warn-script-location /synapse[all]; \
   fi
 
+RUN pip install --prefix="/install" --no-warn-script-location 'git+https://github.com/devture/matrix-synapse-shared-secret-auth#egg=shared_secret_authenticator'
+
 ###
 ### Stage 2: runtime
 ###
