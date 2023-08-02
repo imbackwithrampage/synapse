@@ -50,9 +50,11 @@ from synapse.logging.opentracing import (
     start_active_span,
     trace,
 )
+from synapse.storage.database import LoggingTransaction
 from synapse.storage.databases.main.event_push_actions import RoomNotifCounts
 from synapse.storage.databases.main.roommember import extract_heroes_from_room_summary
 from synapse.storage.roommember import MemberSummary
+from synapse.storage.state import StateFilter
 from synapse.types import (
     DeviceListUpdates,
     JsonDict,
@@ -65,8 +67,8 @@ from synapse.types import (
     StreamToken,
     UserID,
 )
-from synapse.types.state import StateFilter
 from synapse.util.async_helpers import concurrently_execute
+from synapse.util.caches.descriptors import cached
 from synapse.util.caches.expiringcache import ExpiringCache
 from synapse.util.caches.lrucache import LruCache
 from synapse.util.caches.response_cache import ResponseCache, ResponseCacheContext
@@ -142,6 +144,7 @@ class JoinedSyncResult:
     unread_notifications: JsonDict
     unread_thread_notifications: JsonDict
     summary: Optional[JsonDict]
+    preview: Optional[JsonDict]
     unread_count: int
 
     def __bool__(self) -> bool:
@@ -153,6 +156,7 @@ class JoinedSyncResult:
             or self.state
             or self.ephemeral
             or self.account_data
+            or self.preview
             # nb the notification count does not, er, count: if there's nothing
             # else in the result, we don't need to send it.
         )
@@ -1326,6 +1330,48 @@ class SyncHandler:
                 sync_config.user.to_string(),
             )
 
+    @cached(max_entries=1, iterable=True)
+    async def beeper_preview_for_room_id_and_user_id(
+        self, room_id: str, user_id: str, to_key: RoomStreamToken
+    ) -> JsonDict:
+        res = {}
+
+        def _beeper_preview_for_room_id_and_user_id(txn: LoggingTransaction):
+            sql = """
+            SELECT e.event_id, e.origin_server_ts
+                FROM events AS e \
+            WHERE e.stream_ordering <= ? AND e.room_id = ? \
+            AND (e.type = "m.room.message" \
+            OR e.type = "m.room.encrypted" \
+            OR e.type = "m.reaction") \
+            AND e.event_id NOT IN (SELECT redacts FROM redactions) \
+            AND CASE WHEN (e.type = "m.reaction") \
+                THEN (SELECT ? = ee.sender FROM events as ee \
+                    WHERE ee.event_id = (SELECT er.relates_to_id FROM event_relations AS er \
+                    WHERE er.event_id = e.event_id)) ELSE (true) END
+            ORDER BY stream_ordering DESC
+            LIMIT 1
+            """
+
+            txn.execute(
+                sql,
+                (
+                    to_key.stream,
+                    room_id,
+                    user_id,
+                ),
+            )
+            for event_id, origin_server_ts in txn:
+                res["event_id"] = event_id
+                res["origin_server_ts"] = origin_server_ts
+
+        await self.store.db_pool.runInteraction(
+            "beeper_preview_for_room_id_and_user_id",
+            _beeper_preview_for_room_id_and_user_id,
+        )
+
+        return res
+
     async def generate_sync_result(
         self,
         sync_config: SyncConfig,
@@ -1963,6 +2009,7 @@ class SyncHandler:
             if since_token and not ephemeral_by_room and not account_data_by_room:
                 have_changed = await self._have_rooms_changed(sync_result_builder)
                 log_kv({"rooms_have_changed": have_changed})
+
                 if not have_changed:
                     tags_by_room = await self.store.get_updated_tags(
                         user_id, since_token.account_data_key
@@ -2455,6 +2502,9 @@ class SyncHandler:
                 }
             )
 
+            # Retrieve user_id for current sync.
+            user_id = sync_result_builder.sync_config.user.to_string()
+
             # Note: `batch` can be both empty and limited here in the case where
             # `_load_filtered_recents` can't find any events the user should see
             # (e.g. due to having ignored the sender of the last 50 events).
@@ -2464,7 +2514,6 @@ class SyncHandler:
             # newly joined room, unless either a) they've joined before or b) the
             # tag was added by synapse e.g. for server notice rooms.
             if full_state:
-                user_id = sync_result_builder.sync_config.user.to_string()
                 tags = await self.store.get_tags_for_room(user_id, room_id)
 
                 # If there aren't any tags, don't send the empty tags list down
@@ -2542,6 +2591,10 @@ class SyncHandler:
                     room_id, sync_config, batch, state, now_token
                 )
 
+            preview: JsonDict = await self.beeper_preview_for_room_id_and_user_id(
+                room_id=room_id, user_id=user_id, to_key=now_token.room_key
+            )
+
             if room_builder.rtype == "joined":
                 unread_notifications: Dict[str, int] = {}
                 room_sync = JoinedSyncResult(
@@ -2554,6 +2607,7 @@ class SyncHandler:
                     unread_thread_notifications={},
                     summary=summary,
                     unread_count=0,
+                    preview=preview,
                 )
 
                 if room_sync or always_include:
