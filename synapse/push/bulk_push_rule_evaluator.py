@@ -61,15 +61,6 @@ push_rules_state_size_counter = Counter(
     "synapse_push_bulk_push_rule_evaluator_push_rules_state_size_counter", ""
 )
 
-
-STATE_EVENT_TYPES_TO_MARK_UNREAD = {
-    EventTypes.Topic,
-    EventTypes.Name,
-    EventTypes.RoomAvatar,
-    EventTypes.Tombstone,
-}
-
-
 SENTINEL = object()
 
 
@@ -78,31 +69,18 @@ def _should_count_as_unread(event: EventBase, context: EventContext) -> bool:
     if context.rejected or event.internal_metadata.is_soft_failed():
         return False
 
-    # Exclude notices.
-    if (
-        not event.is_state()
-        and event.type == EventTypes.Message
-        and event.content.get("msgtype") == "m.notice"
-    ):
-        return False
-
     # Exclude edits.
     relates_to = relation_from_event(event)
     if relates_to and relates_to.rel_type == RelationTypes.REPLACE:
         return False
 
-    # Mark events that have a non-empty string body as unread.
-    body = event.content.get("body")
-    if isinstance(body, str) and body:
-        return True
-
-    # Mark some state events as unread.
-    if event.is_state() and event.type in STATE_EVENT_TYPES_TO_MARK_UNREAD:
-        return True
-
-    # Mark encrypted events as unread.
-    if not event.is_state() and event.type == EventTypes.Encrypted:
-        return True
+    # Mark encrypted and plain text messages events as unread.
+    if not event.is_state():
+        if event.type == EventTypes.Encrypted:
+            return True
+        elif event.type == EventTypes.Message:
+            body = event.content.get("body")
+            return isinstance(body, str) and bool(body)
 
     return False
 
