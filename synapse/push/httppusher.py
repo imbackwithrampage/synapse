@@ -406,7 +406,6 @@ class HttpPusher(Pusher):
             "pushkey": self.pushkey,
             "pushkey_ts": int(self.pushkey_ts / 1000),
             "data": data,
-            "user_id": self.user_id,
         }
         if tweaks:
             device["tweaks"] = tweaks
@@ -488,6 +487,7 @@ class HttpPusher(Pusher):
                     "com.beeper.server_type": "synapse",
                     # 'missed_calls': 2
                 },
+                "com.beeper.user_id": self.user_id,
             }
             if event.type == "m.room.member" and event.is_state():
                 content["membership"] = event.content["membership"]
@@ -525,13 +525,13 @@ class HttpPusher(Pusher):
                     "unread": badge,
                     "com.beeper.server_type": "synapse",
                 },
+                "com.beeper.user_id": self.user_id,
                 "devices": [
                     {
                         "app_id": self.app_id,
                         "pushkey": self.pushkey,
                         "pushkey_ts": int(self.pushkey_ts / 1000),
                         "data": self.data_minus_url,
-                        "user_id": self.user_id,
                     }
                 ],
             }
